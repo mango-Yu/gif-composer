@@ -18,7 +18,7 @@
 - 画布尺寸以 **第一张图** 为基准，其余图片按比例缩放并居中铺在白底上
 - 通过系统对话框 **选择保存路径** 导出 `.gif`
 - **录屏转 GIF**（`getDisplayMedia`）：系统共享后可在应用内**框选区域与大小**（或一键整幅画面）；最长 60 秒、无水印
-- **上传视频转 GIF**：选择本地 MP4 / M4V 视频后抽帧转换，视频时长最长 20 秒（推荐 H.264 编码）
+- **上传视频转 GIF**：选择本地 MP4 / M4V 视频后抽帧转换，视频时长最长 30 秒（推荐 H.264 编码）
 
 ## 环境要求
 
@@ -27,7 +27,9 @@
   - macOS：先装 [Xcode Command Line Tools](https://developer.apple.com/xcode/resources/)：`xcode-select --install`  
   - Windows：安装 [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)（含 MSVC）与 WebView2
 
-### 安装 Rust（macOS / Linux 示例）
+### 安装 Rust
+
+#### macOS / Linux
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -36,7 +38,22 @@ source "$HOME/.cargo/env"
 cargo --version
 ```
 
-若已安装但仍提示找不到 `cargo`，多半是 **PATH 未包含 `~/.cargo/bin`**。在 `~/.zshrc` 末尾追加：
+#### Windows
+
+任选其一：
+
+1. 浏览器打开 [rustup.rs](https://rustup.rs/)，下载 **rustup-init.exe**，双击运行并按默认选项完成安装。
+2. 若已启用 **winget**（Windows 10/11 常见）：在 PowerShell 中执行 `winget install Rustlang.Rustup`。
+
+安装结束后 **关闭并重新打开终端**（或新开 PowerShell），验证：
+
+```powershell
+cargo --version
+```
+
+若仍提示找不到 `cargo`，在「用户环境变量」的 PATH 中检查是否包含 `%USERPROFILE%\.cargo\bin`。
+
+**macOS / Linux：**若已安装但仍提示找不到 `cargo`，多半是 **PATH 未包含 `~/.cargo/bin`**。在 `~/.zshrc` 末尾追加：
 
 ```bash
 export PATH="$HOME/.cargo/bin:$PATH"
@@ -118,4 +135,4 @@ npx tauri icon ./your-icon.png
 - GIF 每帧颜色数经量化（`imagequant`），体积与观感会有折中。
 - 若缩略图预览异常，请确认 `tauri.conf.json` 里 `app.security.assetProtocol` 已启用且 `scope` 覆盖所选文件路径（示例中为 `["**"]`，仅适合自用/内部工具）。
 - **Pro · 录屏转 GIF**：依赖 `getDisplayMedia`。**macOS** 的 `src-tauri/Info.plist` 需同时包含 `NSScreenCaptureUsageDescription`、`NSCameraUsageDescription`、`NSMicrophoneUsageDescription`：仅声明屏幕录制时，部分系统上 **WebKit 不会挂载 `navigator.mediaDevices`**（与 [Tauri #4677](https://github.com/tauri-apps/tauri/issues/4677) 类似）；摄像头与麦克风可在系统弹窗中选「不允许」。另需在「隐私与安全性 → 录屏与系统录音」中允许本应用。**Windows** 需 WebView2；**Linux** 需 WebKitGTK 与桌面门户。录屏最长 60 秒、无水印。
-- **上传视频转 GIF**：使用系统 WebView 的 `<video>` 能力解码本地视频，再用 Canvas 抽帧编码 GIF；不内置 FFmpeg，因此当前入口限制为 MP4 / M4V（推荐 H.264 编码）。视频时长最长 20 秒。
+- **上传视频转 GIF**：使用系统 WebView 的 `<video>` 能力解码本地视频，再用 Canvas 抽帧编码 GIF；不内置 FFmpeg，因此当前入口限制为 MP4 / M4V（推荐 H.264 编码）。视频时长最长 30 秒。

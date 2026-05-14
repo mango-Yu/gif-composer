@@ -1,5 +1,5 @@
 import { convertFileSrc, invoke, isTauri } from "@tauri-apps/api/core";
-import { writeFile } from "@tauri-apps/plugin-fs";
+import { readFile, writeFile } from "@tauri-apps/plugin-fs";
 import { open, save } from "@tauri-apps/plugin-dialog";
 
 import { createScreenCaptureVideo, ScreenGifRecorder } from "./screen_record";
@@ -38,7 +38,7 @@ const videoMaxSecInput = document.querySelector<HTMLInputElement>("#video-max-se
 const inTauri = isTauri();
 
 const PRO_RECORD_MAX_SEC = 60;
-const VIDEO_MAX_SEC = 20;
+const VIDEO_MAX_SEC = 30;
 const VIDEO_EXTENSIONS = ["mp4", "m4v"];
 const VIDEO_FORMAT_LABEL = "MP4 / M4V（推荐 H.264 编码）";
 
@@ -449,9 +449,15 @@ videoPickBtn.addEventListener("click", async () => {
   syncVideoControls();
   setStatus("正在读取视频并生成 GIF…");
 
+  let videoObjectUrl: string | null = null;
   try {
+    // convertFileSrc 在 Windows WebView2 下常与页面不同源，drawImage + getImageData 会污染画布；
+    // 读入内存后使用 blob URL 与页面同源，可正常抽帧。
+    const fileBytes = await readFile(selected);
+    const blob = new Blob([fileBytes], { type: "video/mp4" });
+    videoObjectUrl = URL.createObjectURL(blob);
     const bytes = await createGifFromVideo({
-      videoSrc: convertFileSrc(selected),
+      videoSrc: videoObjectUrl,
       fps,
       maxSeconds: VIDEO_MAX_SEC,
       maxLongEdge: 960,
@@ -466,6 +472,7 @@ videoPickBtn.addEventListener("click", async () => {
   } catch (err) {
     setStatus(String(err), true);
   } finally {
+    if (videoObjectUrl) URL.revokeObjectURL(videoObjectUrl);
     isVideoConverting = false;
     syncVideoControls();
   }
