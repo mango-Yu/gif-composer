@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GIF 合成器</title>
+    <script type="module" src="/src/main.ts"></script>
+  </head>
+  <body>
+    <main class="app">
+      <header class="hero">
+        <h1>GIF 合成器</h1>
+        <p class="sub">
+          选择多张图片，拖拽或按钮调整顺序，设置帧间隔后导出为 GIF。
+        </p>
+      </header>
+
+      <section class="toolbar">
+        <span id="edition-badge" class="edition-badge" aria-live="polite"></span>
+        <button id="pick" type="button">选择图片</button>
+        <button id="clear" type="button" class="ghost">清空列表</button>
+        <label class="delay">
+          每帧间隔（毫秒）
+          <input id="delay-ms" type="number" min="20" step="10" value="2000" />
+        </label>
+        <button id="export" type="button" class="primary">生成并保存 GIF</button>
+      </section>
+
+      <section id="record-panel" class="pro-record-panel" hidden>
+        <h3 id="record-heading" class="pro-record-title">录屏转 GIF</h3>
+        <p id="record-intro" class="pro-record-desc"></p>
+        <div class="pro-record-row">
+          <label class="pro-record-label">
+            帧率（FPS）
+            <input id="record-fps" type="number" min="1" max="24" step="1" value="8" />
+          </label>
+          <label class="pro-record-label">
+            最长（秒）
+            <input id="record-max-sec" type="number" min="5" max="60" step="1" value="60" />
+          </label>
+          <button id="record-start" type="button" class="record-btn">开始录屏</button>
+          <button id="record-stop" type="button" class="record-btn primary" disabled>
+            停止并保存 GIF
+          </button>
+        </div>
+      </section>
+
+      <p id="status" class="status"></p>
+
+      <ul id="image-list" class="grid"></ul>
+    </main>
+  </body>
+</html>
