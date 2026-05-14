@@ -2,6 +2,14 @@
 
 基于 **Tauri 2 + Vite + TypeScript** 的桌面应用：在 **macOS** 与 **Windows** 上功能一致，可将多张图片按顺序合成 GIF，支持拖拽调整顺序并保存到本地。
 
+## 截图
+
+![主界面：多图合成与录屏转 GIF（Pro）](1.png)
+
+![帧列表：拖拽排序、上移 / 下移与移除](2.png)
+
+![录屏：绿色框选取区域或整幅画面后开始录制](3.png)
+
 ## 功能
 
 - 选择多张本地图片（PNG / JPEG / GIF / WebP / BMP）
@@ -59,7 +67,11 @@ npm run tauri build
 - macOS：`.app` / `.dmg`  
 - Windows：`.msi` / `.exe`（依工具链与配置而定）
 
+Release 页上的 **Source code (zip/tar.gz)** 是 GitHub 为每个 tag **自动附加的源码包**，不是安装包；**安装包**来自 CI（`tauri build`）上传到 **Assets** 后才会多出来 `.dmg`、`-setup.exe` 等文件。
+
 - **交叉编译**（可选，需自行配置对应 linker / SDK）本文不展开。
+
+- **GitHub：打 tag 自动打包**：推送形如 `v0.1.0` 的 tag 会触发仓库内 `.github/workflows/release-tag.yml`，在 Windows / macOS Runner 上构建并将安装包上传到 **同名 GitHub Release**。需先将 **含 `src-tauri` 的可构建工程** 与 **工作流文件** 提交并推到默认分支，再打 tag；若此前已打过 tag，可删远端 tag 后重新推送，或在修正后推新版本 tag（例如 `v0.0.2`）。
 
 ## 图标
 
