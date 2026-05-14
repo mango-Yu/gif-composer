@@ -16,7 +16,7 @@
       </header>
 
       <section class="toolbar">
-        <span id="edition-badge" class="edition-badge" aria-live="polite"></span>
+        <!-- <span id="edition-badge" class="edition-badge" aria-live="polite"></span> -->
         <button id="pick" type="button">选择图片</button>
         <button id="clear" type="button" class="ghost">清空列表</button>
         <label class="delay">
@@ -41,6 +41,24 @@
           <button id="record-start" type="button" class="record-btn">开始录屏</button>
           <button id="record-stop" type="button" class="record-btn primary" disabled>
             停止并保存 GIF
+          </button>
+        </div>
+      </section>
+
+      <section id="video-panel" class="pro-record-panel" hidden>
+        <h3 class="pro-record-title">上传视频转 GIF</h3>
+        <p id="video-intro" class="pro-record-desc"></p>
+        <div class="pro-record-row">
+          <label class="pro-record-label">
+            帧率（FPS）
+            <input id="video-fps" type="number" min="1" max="24" step="1" value="8" />
+          </label>
+          <label class="pro-record-label">
+            最长（秒）
+            <input id="video-max-sec" type="number" min="1" max="20" step="1" value="20" readonly />
+          </label>
+          <button id="video-pick" type="button" class="record-btn primary">
+            选择视频并保存 GIF
           </button>
         </div>
       </section>

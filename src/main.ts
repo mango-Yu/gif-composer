@@ -4,6 +4,7 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 
 import { createScreenCaptureVideo, ScreenGifRecorder } from "./screen_record";
 import { pickRecordingRegion } from "./record_region_picker";
+import { createGifFromVideo } from "./video_to_gif";
 import "./style.css";
 
 type Item = { id: string; path: string };
@@ -16,7 +17,7 @@ type EditionInfo = {
 const listEl = document.querySelector<HTMLUListElement>("#image-list")!;
 const delayInput = document.querySelector<HTMLInputElement>("#delay-ms")!;
 const statusEl = document.querySelector<HTMLParagraphElement>("#status")!;
-const editionBadge = document.querySelector<HTMLSpanElement>("#edition-badge")!;
+// const editionBadge = document.querySelector<HTMLSpanElement>("#edition-badge")!;
 const pickBtn = document.querySelector<HTMLButtonElement>("#pick")!;
 const clearBtn = document.querySelector<HTMLButtonElement>("#clear")!;
 const exportBtn = document.querySelector<HTMLButtonElement>("#export")!;
@@ -27,11 +28,19 @@ const recordStartBtn = document.querySelector<HTMLButtonElement>("#record-start"
 const recordStopBtn = document.querySelector<HTMLButtonElement>("#record-stop")!;
 const recordFpsInput = document.querySelector<HTMLInputElement>("#record-fps")!;
 const recordMaxSecInput = document.querySelector<HTMLInputElement>("#record-max-sec")!;
+const videoPanel = document.querySelector<HTMLElement>("#video-panel")!;
+const videoIntro = document.querySelector<HTMLParagraphElement>("#video-intro")!;
+const videoPickBtn = document.querySelector<HTMLButtonElement>("#video-pick")!;
+const videoFpsInput = document.querySelector<HTMLInputElement>("#video-fps")!;
+const videoMaxSecInput = document.querySelector<HTMLInputElement>("#video-max-sec")!;
 
 /** 仅 Tauri WebView 会注入 __TAURI_INTERNALS__；用浏览器单独打开 Vite 端口时插件与 invoke 不可用。 */
 const inTauri = isTauri();
 
 const PRO_RECORD_MAX_SEC = 60;
+const VIDEO_MAX_SEC = 20;
+const VIDEO_EXTENSIONS = ["mp4", "m4v"];
+const VIDEO_FORMAT_LABEL = "MP4 / M4V（推荐 H.264 编码）";
 
 function guardTauri(): boolean {
   if (!inTauri) {
@@ -56,8 +65,9 @@ function clearRecordRegionOverlay(): void {
 
 async function loadEdition(): Promise<void> {
   if (!inTauri) {
-    editionBadge.textContent = "";
+    // editionBadge.textContent = "";
     recordPanel.hidden = true;
+    videoPanel.hidden = true;
     return;
   }
   try {
@@ -66,8 +76,8 @@ async function loadEdition(): Promise<void> {
     // 版本查询失败时仍按默认 Pro 能力呈现，避免误回受限状态。
   }
   recordPanel.hidden = false;
-  editionBadge.textContent = "Pro · 张数不限";
-  editionBadge.classList.add("pro");
+  // editionBadge.textContent = "Pro · 张数不限";
+  // editionBadge.classList.add("pro");
   recordHeading.textContent = "Pro · 录屏转 GIF";
   recordIntro.textContent =
     "系统共享后可在预览中框选区域与大小。最长 " +
@@ -78,11 +88,21 @@ async function loadEdition(): Promise<void> {
   recordMaxSecInput.min = "5";
   recordMaxSecInput.max = String(PRO_RECORD_MAX_SEC);
   recordMaxSecInput.value = String(PRO_RECORD_MAX_SEC);
+  videoPanel.hidden = false;
+  videoIntro.textContent =
+    "选择一段本地视频后自动抽帧并保存为 GIF。视频时长最长 " +
+    String(VIDEO_MAX_SEC) +
+    ` 秒；当前仅支持 ${VIDEO_FORMAT_LABEL}。`;
+  videoMaxSecInput.readOnly = true;
+  videoMaxSecInput.disabled = false;
+  videoMaxSecInput.value = String(VIDEO_MAX_SEC);
   syncPickButtonState();
   syncRecordControls();
+  syncVideoControls();
 }
 
 let screenRecorder: ScreenGifRecorder | null = null;
+let isVideoConverting = false;
 
 function syncRecordControls(): void {
   const running = screenRecorder?.isRunning ?? false;
@@ -92,17 +112,33 @@ function syncRecordControls(): void {
   recordMaxSecInput.disabled = running;
 }
 
-async function saveGifToDisk(bytes: Uint8Array | null, context: string): Promise<void> {
+function syncVideoControls(): void {
+  videoPickBtn.disabled = isVideoConverting;
+  videoFpsInput.disabled = isVideoConverting;
+  videoMaxSecInput.disabled = isVideoConverting;
+}
+
+function isAllowedVideoPath(path: string): boolean {
+  const ext = path.split(/[\\/]/).pop()?.split(".").pop()?.toLowerCase();
+  return !!ext && VIDEO_EXTENSIONS.includes(ext);
+}
+
+type SaveGifOptions = {
+  defaultPath?: string;
+  cancelMessage?: string;
+};
+
+async function saveGifToDisk(bytes: Uint8Array | null, context: string, options: SaveGifOptions = {}): Promise<void> {
   if (!bytes?.length) {
     setStatus(`${context}：没有可保存的画面帧。`, true);
     return;
   }
   const outPath = await save({
-    defaultPath: "screen-record.gif",
+    defaultPath: options.defaultPath ?? "screen-record.gif",
     filters: [{ name: "GIF", extensions: ["gif"] }],
   });
   if (!outPath) {
-    setStatus("已取消保存录屏 GIF。");
+    setStatus(options.cancelMessage ?? "已取消保存录屏 GIF。");
     return;
   }
   setStatus("正在写入文件…");
@@ -389,17 +425,67 @@ recordStopBtn.addEventListener("click", async () => {
   await saveGifToDisk(bytes, "录屏");
 });
 
+videoPickBtn.addEventListener("click", async () => {
+  if (!guardTauri()) return;
+  if (isVideoConverting) return;
+
+  const selected = await open({
+    multiple: false,
+    filters: [
+      {
+        name: VIDEO_FORMAT_LABEL,
+        extensions: VIDEO_EXTENSIONS,
+      },
+    ],
+  });
+  if (!selected || Array.isArray(selected)) return;
+  if (!isAllowedVideoPath(selected)) {
+    setStatus(`当前仅支持 ${VIDEO_FORMAT_LABEL} 视频。`, true);
+    return;
+  }
+
+  const fps = Math.min(24, Math.max(1, Number(videoFpsInput.value) || 8));
+  isVideoConverting = true;
+  syncVideoControls();
+  setStatus("正在读取视频并生成 GIF…");
+
+  try {
+    const bytes = await createGifFromVideo({
+      videoSrc: convertFileSrc(selected),
+      fps,
+      maxSeconds: VIDEO_MAX_SEC,
+      maxLongEdge: 960,
+      onProgress: (done, total) => {
+        setStatus(`正在转换视频… ${done}/${total} 帧`);
+      },
+    });
+    await saveGifToDisk(bytes, "视频 GIF", {
+      defaultPath: "video.gif",
+      cancelMessage: "已取消保存视频 GIF。",
+    });
+  } catch (err) {
+    setStatus(String(err), true);
+  } finally {
+    isVideoConverting = false;
+    syncVideoControls();
+  }
+});
+
 render();
 if (!inTauri) {
   pickBtn.disabled = true;
   exportBtn.disabled = true;
   delayInput.disabled = true;
-  editionBadge.textContent = "";
+  // editionBadge.textContent = "";
   recordPanel.hidden = true;
   recordStartBtn.disabled = true;
   recordStopBtn.disabled = true;
   recordFpsInput.disabled = true;
   recordMaxSecInput.disabled = true;
+  videoPanel.hidden = true;
+  videoPickBtn.disabled = true;
+  videoFpsInput.disabled = true;
+  videoMaxSecInput.disabled = true;
   setStatus("当前在普通浏览器中运行，无法调用系统对话框与 Rust 命令。请使用：npm run tauri dev（会打开带壳窗口，不要只用浏览器访问 localhost）。", true);
 } else {
   void loadEdition().then(() => {
