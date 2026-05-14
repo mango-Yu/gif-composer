@@ -67,7 +67,7 @@ npm run tauri build
 - macOS：`.app` / `.dmg`  
 - Windows：`.msi` / `.exe`（依工具链与配置而定）
 
-Release 页上的 **Source code (zip/tar.gz)** 是 GitHub 为每个 tag **自动附加的源码包**，不是安装包；**安装包**来自 CI（`tauri build`）上传到 **Assets** 后才会多出来 `.dmg`、`-setup.exe` 等文件。
+Release 页上的 **Source code (zip/tar.gz)** 是 GitHub 为每个 tag **自动附加的源码包**，不是安装包；**安装包**来自 CI（`tauri build`）上传到 **Assets** 后才会多出来 `.dmg`、`*-setup.exe`（NSIS）等。**若 Assets 里仍只有两个压缩包，请到 Actions 打开本次 tag 触发的 workflow**，看 Windows / macOS 是否报错；常见原因是 `targets: all` 在 Windows 上编 `.msi` 需要 **WiX**，GitHub 默认环境缺它会导致整次构建失败、从而没有 exe/dmg。
 
 - **交叉编译**（可选，需自行配置对应 linker / SDK）本文不展开。
 

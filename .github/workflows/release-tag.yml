@@ -17,9 +17,11 @@ jobs:
       matrix:
         include:
           - platform: macos-latest
-            args: ''
+            # 仅打 DMG，避免无关目标拖慢或干扰 CI
+            args: '--ci --bundles dmg'
           - platform: windows-latest
-            args: ''
+            # 仅打 NSIS（setup.exe）。targets=all 会带 msi，需 WiX，GitHub 默认可用环境常缺它导致整次构建失败
+            args: '--ci --bundles nsis'
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -38,6 +40,7 @@ jobs:
 
       - uses: tauri-apps/tauri-action@v0
         env:
+          CI: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
