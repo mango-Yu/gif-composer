@@ -73,6 +73,29 @@ Release 页上的 **Source code (zip/tar.gz)** 是 GitHub 为每个 tag **自动
 
 - **GitHub：打 tag 自动打包**：推送形如 `v0.1.0` 的 tag 会触发仓库内 `.github/workflows/release-tag.yml`，在 Windows / macOS Runner 上构建并将安装包上传到 **同名 GitHub Release**。需先将 **含 `src-tauri` 的可构建工程** 与 **工作流文件** 提交并推到默认分支，再打 tag；若此前已打过 tag，可删远端 tag 后重新推送，或在修正后推新版本 tag（例如 `v0.0.2`）。
 
+## macOS：提示「已损坏，无法打开」
+
+若系统弹出类似提示：**「"gif-composer.app"已损坏，无法打开。你应该将它移到废纸篓」**，多半是 **Gatekeeper / 隔离属性**（从网上下载的未签名应用），**不等于**安装包真的坏了。
+
+**推荐做法（在信任该应用来源的前提下）：**
+
+1. 打开 **终端**（例如：启动台 → **「终端」**）。
+2. 若已将 **`gif-composer.app`** 放进系统的 **「应用程序」** 文件夹，默认路径即为 **`/Applications/gif-composer.app`**。在终端里 **粘贴下面整行**，按 **回车** 执行：
+
+```bash
+xattr -cr "/Applications/gif-composer.app"
+```
+
+3. 命令执行后若无报错，**关掉旧提示窗**，从启动台或「应用程序」里 **重新打开** gif-composer 即可。
+
+若 `.app` 还在 **下载**、**桌面** 等位置，请把引号里的路径改成实际路径，例如：
+
+```bash
+xattr -cr "$HOME/Downloads/gif-composer.app"
+```
+
+也可在 Finder 中对 **`gif-composer.app`** **右键 →「打开」→「打开」** 作为替代方式。要彻底避免该提示，需使用 Apple 开发者账号做 **代码签名与公证**（公开发布场景）。
+
 ## 图标
 
 项目已包含 `src-tauri/icons` 下的 PNG。若需替换品牌图标，可将一张 **1024×1024** 主图放到仓库根目录后执行：
