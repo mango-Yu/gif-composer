@@ -73,6 +73,14 @@ Release 页上的 **Source code (zip/tar.gz)** 是 GitHub 为每个 tag **自动
 
 - **GitHub：打 tag 自动打包**：推送形如 `v0.1.0` 的 tag 会触发仓库内 `.github/workflows/release-tag.yml`，在 Windows / macOS Runner 上构建并将安装包上传到 **同名 GitHub Release**。需先将 **含 `src-tauri` 的可构建工程** 与 **工作流文件** 提交并推到默认分支，再打 tag；若此前已打过 tag，可删远端 tag 后重新推送，或在修正后推新版本 tag（例如 `v0.0.2`）。
 
+## macOS：DMG 内的使用说明
+
+Release 中的 **`.dmg`** 窗口里通常只有应用图标和「应用程序」入口（Tauri 无法把独立 `.txt` 再摆到与 `.app` 同一层）。已将 **`macOS安装说明.txt`** 打进 **`gif-composer.app/Contents/Resources/`**，与安装包一并随磁盘映像分发。
+
+**打开方式：** 挂载 DMG → 在窗口中对 **`gif-composer.app`** **右键 →「显示包内容」** → 进入 **`Contents`** → **`Resources`** → 双击 **`macOS安装说明.txt`**（安装到「应用程序」后也可用同样路径查看）。
+
+该文件内容与下文「已损坏」解决办法一致，并说明了终端命令的默认路径 **`/Applications/gif-composer.app`**。
+
 ## macOS：提示「已损坏，无法打开」
 
 若系统弹出类似提示：**「"gif-composer.app"已损坏，无法打开。你应该将它移到废纸篓」**，多半是 **Gatekeeper / 隔离属性**（从网上下载的未签名应用），**不等于**安装包真的坏了。
